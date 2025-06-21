@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Futbolcu Yönetim Paneli</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
+            color: #f3f4f6;
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        .btn { transition: all 0.2s ease-in-out; }
+        .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
+        .player-card:hover { transform: scale(1.02); transition: transform 0.2s ease-in-out; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .sort-btn.active {
+            background-color: #0284c7; /* Sky-600 */
+            color: white;
+            box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Ana Konteyner -->
+    <div id="app" class="container mx-auto p-4 md:p-8">
+
+        <!-- Başlık -->
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">
+                <i class="fas fa-shield-halved mr-2"></i> Takım Yönetim Paneli
+            </h1>
+            <p class="text-gray-400">Oyuncularını yönet, performanslarını takip et ve değerlerini gör.</p>
+            <p class="text-sm text-sky-400 mt-2">Tüm verileriniz tarayıcınıza güvenli bir şekilde kaydedilir.</p>
+        </header>
+
+        <!-- Oyuncu Ekleme Formu -->
+        <div class="bg-gray-800 p-6 rounded-2xl shadow-lg mb-8">
+            <h2 class="text-2xl font-semibold mb-4 text-white">Yeni Oyuncu Ekle</h2>
+            <form id="add-player-form" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-300 mb-1">Oyuncu Adı</label>
+                    <input type="text" id="name" name="name" required class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Örn: Polat Alemdar">
+                </div>
+                <div>
+                    <label for="role" class="block text-sm font-medium text-gray-300 mb-1">Mevki</label>
+                    <select id="role" name="role" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="Oyuncu">Oyuncu</option>
+                        <option value="Kaleci">Kaleci</option>
+                    </select>
+                </div>
+                <button type="submit" id="add-player-btn" class="btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg w-full md:w-auto">
+                    <i class="fas fa-plus mr-2"></i>Oyuncuyu Ekle
+                </button>
+            </form>
+            <div id="player-limit-info" class="mt-4 text-sm text-gray-400"></div>
+        </div>
+        
+        <!-- Sıralama Butonları -->
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold text-white mb-3">Sırala:</h3>
+            <div id="sort-buttons" class="flex flex-wrap gap-2">
+                <button data-sort="transferValue" class="sort-btn btn bg-gray-700 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg active">Değere Göre</button>
+                <button data-sort="goals" class="sort-btn btn bg-gray-700 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg">En Çok Gol</button>
+                <button data-sort="assists" class="sort-btn btn bg-gray-700 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg">En Çok Asist</button>
+                <button data-sort="cleanSheets" class="sort-btn btn bg-gray-700 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg">En Çok Kurtarış</button>
+            </div>
+        </div>
+
+        <!-- Yükleniyor veya Hata Mesajı -->
+        <div id="loading-or-error" class="text-center my-10 hidden">
+             <p class="text-gray-400 text-xl">...</p>
+        </div>
+
+        <!-- Oyuncu Listesi -->
+        <div id="player-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Oyuncu kartları buraya eklenecek -->
+        </div>
+    </div>
+    
+    <!-- Modal (Mesaj Kutusu) -->
+    <div id="message-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
+        <div class="bg-gray-800 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl">
+            <p id="modal-message" class="text-white text-lg mb-6"></p>
+            <button id="modal-close-btn" class="btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Tamam</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DEĞİŞKENLER VE SABİTLER ---
+            const MAX_PLAYERS = 300;
+            const GOAL_BONUS = 35000;
+            const ASSIST_BONUS = 25000;
+            const CLEAN_SHEET_BONUS = 65000;
+            const CAPTAIN_BONUS = 10000;
+            const INITIAL_TRANSFER_VALUE = 50000;
+
+            let players = [];
+            let currentSort = 'transferValue'; 
+
+            // --- UI ELEMENTLERİ ---
+            const addPlayerForm = document.getElementById('add-player-form');
+            const playerListDiv = document.getElementById('player-list');
+            const playerLimitInfo = document.getElementById('player-limit-info');
+            const sortButtonsContainer = document.getElementById('sort-buttons');
+            const modal = document.getElementById('message-modal');
+            const modalMessage = document.getElementById('modal-message');
+            const modalCloseBtn = document.getElementById('modal-close-btn');
+
+            // --- VERİ SAKLAMA FONKSİYONLARI (localStorage) ---
+            const savePlayers = () => {
+                localStorage.setItem('futbolTakimim', JSON.stringify(players));
+            };
+
+            const loadPlayers = () => {
+                const savedPlayers = localStorage.getItem('futbolTakimim');
+                if (savedPlayers) {
+                    players = JSON.parse(savedPlayers);
+                }
+            };
+
+            // --- MESAJ MODALI FONKSİYONLARI ---
+            const showMessage = (message) => {
+                modalMessage.textContent = message;
+                modal.classList.remove('hidden');
+            };
+            modalCloseBtn.addEventListener('click', () => modal.classList.add('hidden'));
+            
+            // --- OYUNCULARI RENDER ETME ---
+            const renderPlayers = () => {
+                // Aktif sıralama butonunu güncelle
+                document.querySelectorAll('.sort-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.dataset.sort === currentSort) btn.classList.add('active');
+                });
+
+                // Oyuncuları sırala
+                const sortedPlayers = [...players].sort((a, b) => (b[currentSort] || 0) - (a[currentSort] || 0));
+
+                playerListDiv.innerHTML = '';
+                if (sortedPlayers.length === 0) {
+                    playerListDiv.innerHTML = `<p class="text-gray-400 col-span-full text-center">Henüz hiç oyuncu eklenmemiş.</p>`;
+                    return;
+                }
+
+                sortedPlayers.forEach((player, index) => {
+                    const playerCard = document.createElement('div');
+                    playerCard.className = `player-card bg-gray-800 rounded-2xl shadow-lg p-5 flex flex-col justify-between border-l-4 border-gray-700`;
+                    const roleIcon = player.role === 'Kaleci' ? `<i class="fas fa-mitten text-blue-400 ml-2" title="Kaleci"></i>` : `<i class="fas fa-running text-green-400 ml-2" title="Oyuncu"></i>`;
+                    const stats = [
+                        { label: 'Maç', value: player.matchesPlayed || 0, icon: 'fa-shirt' },
+                        { label: 'Gol', value: player.goals || 0, icon: 'fa-futbol' },
+                        { label: 'Asist', value: player.assists || 0, icon: 'fa-hands-helping' },
+                        { label: 'Kaptanlık', value: player.captaincies || 0, icon: 'fa-crown' }
+                    ];
+                    if(player.role === 'Kaleci') {
+                        stats[2] = { label: 'Kurtarış', value: player.cleanSheets || 0, icon: 'fa-shield-alt' };
+                    }
+                    playerCard.innerHTML = `
+                        <div>
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 class="text-xl font-bold text-white flex items-center">
+                                        <span class="text-gray-400 mr-3 text-2xl font-light">${index + 1}.</span>
+                                        ${player.name}
+                                        ${roleIcon}
+                                    </h3>
+                                    <p class="text-2xl font-semibold text-cyan-400 mt-1">${new Intl.NumberFormat('tr-TR').format(player.transferValue)} €</p>
+                                </div>
+                                <button data-id="${player.id}" class="action-btn btn-delete btn bg-red-700 hover:bg-red-800 text-white rounded-full w-8 h-8 flex items-center justify-center"><i class="fas fa-trash"></i></button>
+                            </div>
+                            <div class="grid grid-cols-4 gap-2 text-center text-sm mb-4">
+                                ${stats.map(s => `<div class="bg-gray-700 p-2 rounded-lg"><i class="fas ${s.icon} text-gray-400 mb-1"></i><p class="font-bold text-lg text-white">${s.value}</p><p class="text-gray-400 text-xs">${s.label}</p></div>`).join('')}
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                            <div class="flex items-center bg-gray-700 rounded-lg"><button data-id="${player.id}" data-stat="matchesPlayed" class="action-btn btn-minus btn bg-red-600 w-full h-full p-2 rounded-l-lg" ${!(player.matchesPlayed > 0) ? 'disabled' : ''}>-</button><span class="flex-grow text-center font-semibold">Maç</span><button data-id="${player.id}" data-stat="matchesPlayed" class="action-btn btn-plus btn bg-green-600 w-full h-full p-2 rounded-r-lg">+</button></div>
+                            <div class="flex items-center bg-gray-700 rounded-lg"><button data-id="${player.id}" data-stat="goals" class="action-btn btn-minus btn bg-red-600 w-full h-full p-2 rounded-l-lg" ${!(player.goals > 0) ? 'disabled' : ''}>-</button><span class="flex-grow text-center font-semibold">Gol</span><button data-id="${player.id}" data-stat="goals" class="action-btn btn-plus btn bg-green-600 w-full h-full p-2 rounded-r-lg">+</button></div>
+                            <div class="flex items-center bg-gray-700 rounded-lg"><button data-id="${player.id}" data-stat="${player.role === 'Kaleci' ? 'cleanSheets' : 'assists'}" class="action-btn btn-minus btn bg-red-600 w-full h-full p-2 rounded-l-lg" ${player.role === 'Kaleci' ? !(player.cleanSheets > 0) ? 'disabled' : '' : !(player.assists > 0) ? 'disabled' : ''}>-</button><span class="flex-grow text-center font-semibold">${player.role === 'Kaleci' ? 'Kurtarış' : 'Asist'}</span><button data-id="${player.id}" data-stat="${player.role === 'Kaleci' ? 'cleanSheets' : 'assists'}" class="action-btn btn-plus btn bg-green-600 w-full h-full p-2 rounded-r-lg">+</button></div>
+                            <div class="flex items-center bg-gray-700 rounded-lg"><button data-id="${player.id}" data-stat="captaincies" class="action-btn btn-minus btn bg-red-600 w-full h-full p-2 rounded-l-lg" ${!(player.captaincies > 0) ? 'disabled' : ''}>-</button><span class="flex-grow text-center font-semibold">Kaptan</span><button data-id="${player.id}" data-stat="captaincies" class="action-btn btn-plus btn bg-green-600 w-full h-full p-2 rounded-r-lg">+</button></div>
+                        </div>
+                    `;
+                    playerListDiv.appendChild(playerCard);
+                });
+                // Aksiyon butonlarına event listenerları yeniden ata
+                document.querySelectorAll('.action-btn').forEach(button => button.addEventListener('click', handleActionClick));
+            };
+            
+            // --- LİMİT BİLGİSİNİ GÜNCELLEME ---
+            const updatePlayerLimitInfo = () => {
+                const count = players.length;
+                playerLimitInfo.textContent = `Takımdaki Oyuncu Sayısı: ${count} / ${MAX_PLAYERS}`;
+                document.getElementById('add-player-btn').disabled = count >= MAX_PLAYERS;
+                if (count >= MAX_PLAYERS) playerLimitInfo.classList.add('text-red-500');
+                else playerLimitInfo.classList.remove('text-red-500');
+            };
+            
+            // --- AKSİYON İŞLEMLERİ ---
+            const handleAddPlayer = (e) => {
+                e.preventDefault();
+                if (players.length >= MAX_PLAYERS) {
+                    showMessage(`Maksimum oyuncu sayısına ulaşıldı (${MAX_PLAYERS}).`);
+                    return;
+                }
+                const name = addPlayerForm.name.value.trim();
+                if (!name) { showMessage("Lütfen oyuncu adını girin."); return; }
+
+                const newPlayer = {
+                    id: crypto.randomUUID(), // Benzersiz ID oluştur
+                    name: name, role: addPlayerForm.role.value,
+                    goals: 0, assists: 0, cleanSheets: 0,
+                    transferValue: INITIAL_TRANSFER_VALUE, createdAt: new Date().toISOString(),
+                    matchesPlayed: 0, captaincies: 0
+                };
+                players.push(newPlayer);
+                savePlayers();
+                renderPlayers();
+                updatePlayerLimitInfo();
+                addPlayerForm.reset();
+            };
+
+            const handleActionClick = (e) => {
+                const button = e.currentTarget;
+                const id = button.dataset.id;
+                const player = players.find(p => p.id === id);
+                if (!player) return;
+
+                if (button.classList.contains('btn-delete')) {
+                    players = players.filter(p => p.id !== id);
+                } else if (button.classList.contains('btn-plus') || button.classList.contains('btn-minus')) {
+                    const statFieldName = button.dataset.stat;
+                    const amount = button.classList.contains('btn-plus') ? 1 : -1;
+                    
+                    if (typeof player[statFieldName] === 'undefined') player[statFieldName] = 0;
+                    
+                    player[statFieldName] += amount;
+                    if(player[statFieldName] < 0) player[statFieldName] = 0; // Negatif değere düşmesini engelle
+
+                    let valueChange = 0;
+                    switch(statFieldName) {
+                        case 'goals': valueChange = GOAL_BONUS * amount; break;
+                        case 'assists': valueChange = ASSIST_BONUS * amount; break;
+                        case 'cleanSheets': valueChange = CLEAN_SHEET_BONUS * amount; break;
+                        case 'captaincies': valueChange = CAPTAIN_BONUS * amount; break;
+                    }
+                    player.transferValue += valueChange;
+                    if(player.transferValue < 0) player.transferValue = 0;
+                }
+                savePlayers();
+                renderPlayers();
+            };
+
+            // --- UYGULAMA BAŞLANGICI ---
+            const initializeApp = () => {
+                addPlayerForm.addEventListener('submit', handleAddPlayer);
+                sortButtonsContainer.addEventListener('click', (e) => {
+                    const sortBtn = e.target.closest('.sort-btn');
+                    if (sortBtn && sortBtn.dataset.sort) {
+                        currentSort = sortBtn.dataset.sort;
+                        renderPlayers(); 
+                    }
+                });
+                loadPlayers();
+                renderPlayers();
+                updatePlayerLimitInfo();
+            };
+
+            initializeApp();
+        });
+    </script>
+
+</body>
+</html>
