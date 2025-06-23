@@ -3,285 +3,573 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Futbolcu Yönetim Paneli</title>
-    <!-- Tailwind CSS CDN -->
+    <title>ELİTE rank - Taş Kağıt Makas</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Impact&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #111827;
-            color: #f3f4f6;
+            font-family: 'Roboto', sans-serif;
+            overflow: hidden;
         }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1f2937; }
-        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
-        .btn { transition: all 0.2s ease-in-out; }
-        .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
-        .player-card:hover { transform: scale(1.02); transition: transform 0.2s ease-in-out; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .sort-btn.active {
-            background-color: #0284c7; /* Sky-600 */
+        .font-impact {
+            font-family: 'Impact', sans-serif;
+        }
+        .screen {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+        }
+        .hidden-screen {
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
+        }
+        .visible-screen {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .btn {
+            transition: all 0.2s ease;
+            border-radius: 0.75rem;
+            border-bottom: 4px solid rgba(0,0,0,0.3);
+            font-weight: 700;
             color: white;
-            box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+            padding: 0.75rem 1.5rem;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+        .btn:active {
+            transform: translateY(1px);
+            border-bottom-width: 2px;
+        }
+        .feedback-toast {
+            position: fixed;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 1rem 2rem;
+            background-color: #f1c40f; /* GOLD */
+            color: #2c3e50;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            font-size: 1.1rem;
+            font-weight: 700;
+            z-index: 9999;
+            transition: top 0.5s ease-in-out;
+        }
+        .feedback-toast.show {
+            top: 20px;
         }
     </style>
 </head>
-<body class="antialiased">
+<body class="bg-gray-800 text-white overflow-hidden">
 
-    <!-- Ana Konteyner -->
-    <div id="app" class="container mx-auto p-4 md:p-8">
+    <div id="game-container" class="relative w-screen h-screen max-w-full max-h-full">
 
-        <!-- Başlık -->
-        <header class="mb-8 text-center">
-            <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">
-                <i class="fas fa-shield-halved mr-2"></i> Takım Yönetim Paneli
-            </h1>
-            <p class="text-gray-400">Oyuncularını yönet, performanslarını takip et ve değerlerini gör.</p>
-            <p class="text-sm text-sky-400 mt-2">Tüm verileriniz tarayıcınıza güvenli bir şekilde kaydedilir.</p>
-        </header>
+        <!-- KULLANICI GİRİŞ EKRANI -->
+        <div id="username-screen" class="screen visible-screen bg-gray-900 flex flex-col justify-center items-center p-4">
+            <h1 class="font-impact text-7xl md:text-8xl text-[#f1c40f] tracking-wider">ELİTE rank</h1>
+            <p class="mt-4 text-lg">Oyuncu Adınızı Girin ve Enter'a Basın</p>
+            <input type="text" id="username-input" class="mt-4 w-64 md:w-80 p-3 bg-gray-700 border-2 border-gray-500 rounded-lg text-center text-xl focus:outline-none focus:border-[#f1c40f]">
+        </div>
 
-        <!-- Oyuncu Ekleme Formu -->
-        <div class="bg-gray-800 p-6 rounded-2xl shadow-lg mb-8">
-            <h2 class="text-2xl font-semibold mb-4 text-white">Yeni Oyuncu Ekle</h2>
-            <form id="add-player-form" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                <div>
-                    <label for="name" class="block text-sm font-medium text-gray-300 mb-1">Oyuncu Adı</label>
-                    <input type="text" id="name" name="name" required class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Örn: Polat Alemdar">
+        <!-- ANA MENÜ EKRANI -->
+        <div id="main-menu-screen" class="screen hidden-screen bg-[#2c3e50] p-4 md:p-6">
+            <div class="flex justify-between items-start">
+                <!-- Sol Üst: Seviye -->
+                <div class="relative w-28 h-28 md:w-36 md:h-36 flex justify-center items-center">
+                    <div id="level-frame" class="absolute inset-0 border-8 rounded-2xl"></div>
+                    <div class="text-center">
+                        <p class="text-xl font-bold">SV</p>
+                        <p id="level-text" class="text-4xl font-bold">1</p>
+                    </div>
                 </div>
-                <div>
-                    <label for="role" class="block text-sm font-medium text-gray-300 mb-1">Mevki</label>
-                    <select id="role" name="role" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="Oyuncu">Oyuncu</option>
-                        <option value="Kaleci">Kaleci</option>
-                    </select>
+                <!-- XP Barı -->
+                <div class="flex-grow mx-4 md:mx-6 mt-2">
+                    <div class="w-full bg-gray-700 rounded-full h-6">
+                        <div id="xp-bar" class="bg-green-500 h-6 rounded-full" style="width: 0%;"></div>
+                    </div>
+                    <p id="xp-label" class="text-center text-sm mt-1">XP: 0/100</p>
                 </div>
-                <button type="submit" id="add-player-btn" class="btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg w-full md:w-auto">
-                    <i class="fas fa-plus mr-2"></i>Oyuncuyu Ekle
-                </button>
-            </form>
-            <div id="player-limit-info" class="mt-4 text-sm text-gray-400"></div>
+                <!-- Sağ Üst: Para & Kupa -->
+                <div class="text-right">
+                    <p id="money-text" class="text-lg font-bold bg-yellow-500/20 px-3 py-1 rounded">Para: 100</p>
+                    <p id="trophies-text" class="text-lg font-bold bg-blue-500/20 px-3 py-1 rounded mt-2">Kupa: 0</p>
+                </div>
+            </div>
+
+            <!-- Butonlar -->
+            <div class="absolute bottom-6 left-6 right-6">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="flex flex-col space-y-4">
+                         <button id="rank-btn" class="btn bg-[#6c757d] w-48">Rankım</button>
+                         <button id="shop-btn" class="btn bg-[#9b59b6] w-48">Dükkan</button>
+                    </div>
+                    <button id="matchmaking-btn" class="btn bg-[#3498db] hover:bg-[#2980b9] text-2xl px-10 py-6 mt-8 md:mt-0">Eşleşme Bul</button>
+                </div>
+            </div>
         </div>
         
-        <!-- Sıralama Butonları -->
-        <div class="mb-6">
-            <h3 class="text-lg font-semibold text-white mb-3">Sırala:</h3>
-            <div id="sort-buttons" class="flex flex-wrap gap-2">
-                <button data-sort="transferValue" class="sort-btn btn bg-gray-700 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg active">Değere Göre</button>
-                <button data-sort="goals" class="sort-btn btn bg-gray-700 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg">En Çok Gol</button>
-                <button data-sort="assists" class="sort-btn btn bg-gray-700 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg">En Çok Asist</button>
-                <button data-sort="cleanSheets" class="sort-btn btn bg-gray-700 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg">En Çok Kurtarış</button>
+        <!-- MAÇ EKRANI -->
+        <div id="match-screen" class="screen hidden-screen bg-[#34495e] flex flex-col justify-between p-4 md:p-8">
+            <!-- Skorlar -->
+            <div class="flex justify-around items-center text-center">
+                <div>
+                    <h2 id="player-name-match" class="text-2xl md:text-4xl font-bold text-green-400">Oyuncu</h2>
+                    <p id="player-score-match" class="text-5xl md:text-7xl font-impact">0</p>
+                </div>
+                <p class="text-6xl md:text-8xl font-impact text-[#f1c40f]">VS</p>
+                <div>
+                    <h2 id="opponent-name-match" class="text-2xl md:text-4xl font-bold text-red-400">Rakip</h2>
+                    <p id="opponent-score-match" class="text-5xl md:text-7xl font-impact">0</p>
+                </div>
+            </div>
+            
+            <!-- Sonuç Alanı -->
+            <div id="match-result-area" class="text-center h-40 flex flex-col justify-center items-center">
+                 <p id="match-info-text" class="text-4xl font-bold">Seçimini Yap!</p>
+                 <div id="choices-display" class="hidden mt-4 text-2xl">
+                     <p id="player-choice-text"></p>
+                     <p id="opponent-choice-text" class="mt-2"></p>
+                 </div>
+            </div>
+
+            <!-- Seçim Butonları -->
+            <div id="match-buttons-container" class="flex justify-center space-x-4 md:space-x-8">
+                <button data-choice="Taş" class="btn match-choice-btn bg-gray-500 hover:bg-gray-600 text-2xl w-28 h-28 md:w-36 md:h-36">Taş</button>
+                <button data-choice="Kağıt" class="btn match-choice-btn bg-gray-500 hover:bg-gray-600 text-2xl w-28 h-28 md:w-36 md:h-36">Kağıt</button>
+                <button data-choice="Makas" class="btn match-choice-btn bg-gray-500 hover:bg-gray-600 text-2xl w-28 h-28 md:w-36 md:h-36">Makas</button>
             </div>
         </div>
 
-        <!-- Yükleniyor veya Hata Mesajı -->
-        <div id="loading-or-error" class="text-center my-10 hidden">
-             <p class="text-gray-400 text-xl">...</p>
+        <!-- DÜKKAN EKRANI -->
+        <div id="shop-screen" class="screen hidden-screen bg-gray-900 p-4 md:p-6 overflow-y-auto">
+             <h1 class="font-impact text-5xl text-center text-[#f1c40f]">DÜKKAN</h1>
+             <p id="shop-money-text" class="text-center text-xl text-yellow-400 mt-2"></p>
+             <div id="shop-items-container" class="mt-6 space-y-4 max-w-2xl mx-auto">
+                 <!-- Dükkan ürünleri buraya JS ile eklenecek -->
+             </div>
+             <button id="shop-back-btn" class="btn bg-red-600 hover:bg-red-700 fixed bottom-4 left-4">Geri</button>
         </div>
 
-        <!-- Oyuncu Listesi -->
-        <div id="player-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Oyuncu kartları buraya eklenecek -->
+        <!-- RANK EKRANI -->
+        <div id="rank-screen" class="screen hidden-screen bg-[#141428] p-4 md:p-6 overflow-y-auto">
+             <h1 class="font-impact text-5xl text-center text-[#f1c40f]">RANK KADEMELERİ</h1>
+             <div id="rank-list-container" class="mt-8 space-y-4 max-w-xl mx-auto">
+                <!-- Ranklar buraya JS ile eklenecek -->
+             </div>
+             <p id="player-rank-info" class="text-center text-xl mt-8 font-bold"></p>
+             <button id="rank-back-btn" class="btn bg-red-600 hover:bg-red-700 fixed bottom-4 left-4">Geri</button>
         </div>
+
     </div>
-    
-    <!-- Modal (Mesaj Kutusu) -->
-    <div id="message-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
-        <div class="bg-gray-800 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl">
-            <p id="modal-message" class="text-white text-lg mb-6"></p>
-            <button id="modal-close-btn" class="btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Tamam</button>
-        </div>
-    </div>
+
+    <!-- Feedback Toast -->
+    <div id="feedback-toast" class="feedback-toast">Mesaj</div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- DEĞİŞKENLER VE SABİTLER ---
-            const MAX_PLAYERS = 300;
-            const GOAL_BONUS = 35000;
-            const ASSIST_BONUS = 25000;
-            const CLEAN_SHEET_BONUS = 65000;
-            const CAPTAIN_BONUS = 10000;
-            const INITIAL_TRANSFER_VALUE = 50000;
+    // --- OYUNUN BEYNİ: JavaScript Kısmı ---
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        // --- HTML Elementlerini Seçme ---
+        const screens = {
+            username: document.getElementById('username-screen'),
+            mainMenu: document.getElementById('main-menu-screen'),
+            match: document.getElementById('match-screen'),
+            shop: document.getElementById('shop-screen'),
+            rank: document.getElementById('rank-screen'),
+        };
 
-            let players = [];
-            let currentSort = 'transferValue'; 
+        const usernameInput = document.getElementById('username-input');
+        const feedbackToast = document.getElementById('feedback-toast');
 
-            // --- UI ELEMENTLERİ ---
-            const addPlayerForm = document.getElementById('add-player-form');
-            const playerListDiv = document.getElementById('player-list');
-            const playerLimitInfo = document.getElementById('player-limit-info');
-            const sortButtonsContainer = document.getElementById('sort-buttons');
-            const modal = document.getElementById('message-modal');
-            const modalMessage = document.getElementById('modal-message');
-            const modalCloseBtn = document.getElementById('modal-close-btn');
+        // Ana Menü Elementleri
+        const levelFrame = document.getElementById('level-frame');
+        const levelText = document.getElementById('level-text');
+        const moneyText = document.getElementById('money-text');
+        const trophiesText = document.getElementById('trophies-text');
+        const xpBar = document.getElementById('xp-bar');
+        const xpLabel = document.getElementById('xp-label');
+        
+        // Ana Menü Butonları
+        const matchmakingBtn = document.getElementById('matchmaking-btn');
+        const shopBtn = document.getElementById('shop-btn');
+        const rankBtn = document.getElementById('rank-btn');
+        
+        // Maç Ekranı Elementleri
+        const playerNameMatch = document.getElementById('player-name-match');
+        const playerScoreMatch = document.getElementById('player-score-match');
+        const opponentNameMatch = document.getElementById('opponent-name-match');
+        const opponentScoreMatch = document.getElementById('opponent-score-match');
+        const matchInfoText = document.getElementById('match-info-text');
+        const choicesDisplay = document.getElementById('choices-display');
+        const playerChoiceText = document.getElementById('player-choice-text');
+        const opponentChoiceText = document.getElementById('opponent-choice-text');
+        const matchButtonsContainer = document.getElementById('match-buttons-container');
+        
+        // Dükkan & Rank Ekranları
+        const shopMoneyText = document.getElementById('shop-money-text');
+        const shopItemsContainer = document.getElementById('shop-items-container');
+        const shopBackBtn = document.getElementById('shop-back-btn');
+        const rankListContainer = document.getElementById('rank-list-container');
+        const playerRankInfo = document.getElementById('player-rank-info');
+        const rankBackBtn = document.getElementById('rank-back-btn');
 
-            // --- VERİ SAKLAMA FONKSİYONLARI (localStorage) ---
-            const savePlayers = () => {
-                localStorage.setItem('futbolTakimim', JSON.stringify(players));
-            };
+        // --- Oyun Verileri ve Durumu ---
+        let player = null;
+        let matchData = null;
+        const OPPONENT_NAMES = ["Gölge", "Fırtına", "Kripto", "Zehir", "Matrix", "Hayalet", "Şampiyon", "Vortex"];
 
-            const loadPlayers = () => {
-                const savedPlayers = localStorage.getItem('futbolTakimim');
-                if (savedPlayers) {
-                    players = JSON.parse(savedPlayers);
-                }
-            };
+        // --- Temel Oyun Fonksiyonları ---
 
-            // --- MESAJ MODALI FONKSİYONLARI ---
-            const showMessage = (message) => {
-                modalMessage.textContent = message;
-                modal.classList.remove('hidden');
-            };
-            modalCloseBtn.addEventListener('click', () => modal.classList.add('hidden'));
-            
-            // --- OYUNCULARI RENDER ETME ---
-            const renderPlayers = () => {
-                // Aktif sıralama butonunu güncelle
-                document.querySelectorAll('.sort-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                    if (btn.dataset.sort === currentSort) btn.classList.add('active');
-                });
+        function showScreen(screenName) {
+            Object.values(screens).forEach(screen => screen.classList.add('hidden-screen'));
+            screens[screenName].classList.remove('hidden-screen');
+        }
 
-                // Oyuncuları sırala
-                const sortedPlayers = [...players].sort((a, b) => (b[currentSort] || 0) - (a[currentSort] || 0));
+        function showFeedback(message, duration = 3000) {
+            feedbackToast.textContent = message;
+            feedbackToast.classList.add('show');
+            setTimeout(() => {
+                feedbackToast.classList.remove('show');
+            }, duration);
+        }
 
-                playerListDiv.innerHTML = '';
-                if (sortedPlayers.length === 0) {
-                    playerListDiv.innerHTML = `<p class="text-gray-400 col-span-full text-center">Henüz hiç oyuncu eklenmemiş.</p>`;
-                    return;
-                }
+        function savePlayerData() {
+            if (player) {
+                localStorage.setItem('eliteRankPlayer', JSON.stringify(player));
+            }
+        }
 
-                sortedPlayers.forEach((player, index) => {
-                    const playerCard = document.createElement('div');
-                    playerCard.className = `player-card bg-gray-800 rounded-2xl shadow-lg p-5 flex flex-col justify-between border-l-4 border-gray-700`;
-                    const roleIcon = player.role === 'Kaleci' ? `<i class="fas fa-mitten text-blue-400 ml-2" title="Kaleci"></i>` : `<i class="fas fa-running text-green-400 ml-2" title="Oyuncu"></i>`;
-                    const stats = [
-                        { label: 'Maç', value: player.matchesPlayed || 0, icon: 'fa-shirt' },
-                        { label: 'Gol', value: player.goals || 0, icon: 'fa-futbol' },
-                        { label: 'Asist', value: player.assists || 0, icon: 'fa-hands-helping' },
-                        { label: 'Kaptanlık', value: player.captaincies || 0, icon: 'fa-crown' }
-                    ];
-                    if(player.role === 'Kaleci') {
-                        stats[2] = { label: 'Kurtarış', value: player.cleanSheets || 0, icon: 'fa-shield-alt' };
+        function loadPlayerData(name) {
+            const savedPlayer = localStorage.getItem('eliteRankPlayer');
+            if (savedPlayer) {
+                const data = JSON.parse(savedPlayer);
+                if (data.name.toLowerCase() === name.toLowerCase()) {
+                    player = data;
+                    // Günlük giriş kontrolü
+                    const today = new Date().toLocaleDateString();
+                    if (player.lastLoginDate !== today) {
+                        player.lastLoginDate = today;
+                        player.money += 50;
+                        showFeedback("Günlük Giriş Bonusu: +50 Para!");
                     }
-                    playerCard.innerHTML = `
-                        <div>
-                            <div class="flex justify-between items-start mb-4">
-                                <div>
-                                    <h3 class="text-xl font-bold text-white flex items-center">
-                                        <span class="text-gray-400 mr-3 text-2xl font-light">${index + 1}.</span>
-                                        ${player.name}
-                                        ${roleIcon}
-                                    </h3>
-                                    <p class="text-2xl font-semibold text-cyan-400 mt-1">${new Intl.NumberFormat('tr-TR').format(player.transferValue)} €</p>
-                                </div>
-                                <button data-id="${player.id}" class="action-btn btn-delete btn bg-red-700 hover:bg-red-800 text-white rounded-full w-8 h-8 flex items-center justify-center"><i class="fas fa-trash"></i></button>
-                            </div>
-                            <div class="grid grid-cols-4 gap-2 text-center text-sm mb-4">
-                                ${stats.map(s => `<div class="bg-gray-700 p-2 rounded-lg"><i class="fas ${s.icon} text-gray-400 mb-1"></i><p class="font-bold text-lg text-white">${s.value}</p><p class="text-gray-400 text-xs">${s.label}</p></div>`).join('')}
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                            <div class="flex items-center bg-gray-700 rounded-lg"><button data-id="${player.id}" data-stat="matchesPlayed" class="action-btn btn-minus btn bg-red-600 w-full h-full p-2 rounded-l-lg" ${!(player.matchesPlayed > 0) ? 'disabled' : ''}>-</button><span class="flex-grow text-center font-semibold">Maç</span><button data-id="${player.id}" data-stat="matchesPlayed" class="action-btn btn-plus btn bg-green-600 w-full h-full p-2 rounded-r-lg">+</button></div>
-                            <div class="flex items-center bg-gray-700 rounded-lg"><button data-id="${player.id}" data-stat="goals" class="action-btn btn-minus btn bg-red-600 w-full h-full p-2 rounded-l-lg" ${!(player.goals > 0) ? 'disabled' : ''}>-</button><span class="flex-grow text-center font-semibold">Gol</span><button data-id="${player.id}" data-stat="goals" class="action-btn btn-plus btn bg-green-600 w-full h-full p-2 rounded-r-lg">+</button></div>
-                            <div class="flex items-center bg-gray-700 rounded-lg"><button data-id="${player.id}" data-stat="${player.role === 'Kaleci' ? 'cleanSheets' : 'assists'}" class="action-btn btn-minus btn bg-red-600 w-full h-full p-2 rounded-l-lg" ${player.role === 'Kaleci' ? !(player.cleanSheets > 0) ? 'disabled' : '' : !(player.assists > 0) ? 'disabled' : ''}>-</button><span class="flex-grow text-center font-semibold">${player.role === 'Kaleci' ? 'Kurtarış' : 'Asist'}</span><button data-id="${player.id}" data-stat="${player.role === 'Kaleci' ? 'cleanSheets' : 'assists'}" class="action-btn btn-plus btn bg-green-600 w-full h-full p-2 rounded-r-lg">+</button></div>
-                            <div class="flex items-center bg-gray-700 rounded-lg"><button data-id="${player.id}" data-stat="captaincies" class="action-btn btn-minus btn bg-red-600 w-full h-full p-2 rounded-l-lg" ${!(player.captaincies > 0) ? 'disabled' : ''}>-</button><span class="flex-grow text-center font-semibold">Kaptan</span><button data-id="${player.id}" data-stat="captaincies" class="action-btn btn-plus btn bg-green-600 w-full h-full p-2 rounded-r-lg">+</button></div>
-                        </div>
-                    `;
-                    playerListDiv.appendChild(playerCard);
-                });
-                // Aksiyon butonlarına event listenerları yeniden ata
-                document.querySelectorAll('.action-btn').forEach(button => button.addEventListener('click', handleActionClick));
-            };
-            
-            // --- LİMİT BİLGİSİNİ GÜNCELLEME ---
-            const updatePlayerLimitInfo = () => {
-                const count = players.length;
-                playerLimitInfo.textContent = `Takımdaki Oyuncu Sayısı: ${count} / ${MAX_PLAYERS}`;
-                document.getElementById('add-player-btn').disabled = count >= MAX_PLAYERS;
-                if (count >= MAX_PLAYERS) playerLimitInfo.classList.add('text-red-500');
-                else playerLimitInfo.classList.remove('text-red-500');
-            };
-            
-            // --- AKSİYON İŞLEMLERİ ---
-            const handleAddPlayer = (e) => {
-                e.preventDefault();
-                if (players.length >= MAX_PLAYERS) {
-                    showMessage(`Maksimum oyuncu sayısına ulaşıldı (${MAX_PLAYERS}).`);
-                    return;
+                    return true;
                 }
-                const name = addPlayerForm.name.value.trim();
-                if (!name) { showMessage("Lütfen oyuncu adını girin."); return; }
+            }
+            return false;
+        }
 
-                const newPlayer = {
-                    id: crypto.randomUUID(), // Benzersiz ID oluştur
-                    name: name, role: addPlayerForm.role.value,
-                    goals: 0, assists: 0, cleanSheets: 0,
-                    transferValue: INITIAL_TRANSFER_VALUE, createdAt: new Date().toISOString(),
-                    matchesPlayed: 0, captaincies: 0
-                };
-                players.push(newPlayer);
-                savePlayers();
-                renderPlayers();
-                updatePlayerLimitInfo();
-                addPlayerForm.reset();
+        function createNewPlayer(name) {
+            player = {
+                name: name,
+                level: 1,
+                xp: 0,
+                xpToNextLevel: 100,
+                money: 100,
+                trophies: 0,
+                equippedFrame: 'default',
+                ownedFrames: { 'default': { name: 'Varsayılan', color: '#a0aec0'} },
+                powerups: { '2x_trophy': 0 },
+                lastLoginDate: new Date().toLocaleDateString()
             };
+            showFeedback(`Hoş Geldin, ${player.name}!`);
+        }
+        
+        function addXp(amount) {
+            player.xp += amount;
+            while (player.xp >= player.xpToNextLevel) {
+                player.xp -= player.xpToNextLevel;
+                player.level += 1;
+                player.xpToNextLevel = Math.floor(player.xpToNextLevel * 1.5);
+                showFeedback(`Seviye Atladın: ${player.level}!`, 4000);
+            }
+        }
+        
+        // --- ARAYÜZ GÜNCELLEME ---
 
-            const handleActionClick = (e) => {
-                const button = e.currentTarget;
-                const id = button.dataset.id;
-                const player = players.find(p => p.id === id);
-                if (!player) return;
+        function updateMainMenuUI() {
+            if (!player) return;
+            const frameColor = player.ownedFrames[player.equippedFrame].color;
+            levelFrame.style.borderColor = frameColor;
+            levelText.textContent = player.level;
+            moneyText.textContent = `Para: ${player.money}`;
+            trophiesText.textContent = `Kupa: ${player.trophies}`;
+            const xpRatio = player.xp / player.xpToNextLevel;
+            xpBar.style.width = `${xpRatio * 100}%`;
+            xpLabel.textContent = `XP: ${player.xp}/${player.xpToNextLevel}`;
+        }
+        
+        // --- Olay Dinleyicileri (Event Listeners) ---
 
-                if (button.classList.contains('btn-delete')) {
-                    players = players.filter(p => p.id !== id);
-                } else if (button.classList.contains('btn-plus') || button.classList.contains('btn-minus')) {
-                    const statFieldName = button.dataset.stat;
-                    const amount = button.classList.contains('btn-plus') ? 1 : -1;
-                    
-                    if (typeof player[statFieldName] === 'undefined') player[statFieldName] = 0;
-                    
-                    player[statFieldName] += amount;
-                    if(player[statFieldName] < 0) player[statFieldName] = 0; // Negatif değere düşmesini engelle
-
-                    let valueChange = 0;
-                    switch(statFieldName) {
-                        case 'goals': valueChange = GOAL_BONUS * amount; break;
-                        case 'assists': valueChange = ASSIST_BONUS * amount; break;
-                        case 'cleanSheets': valueChange = CLEAN_SHEET_BONUS * amount; break;
-                        case 'captaincies': valueChange = CAPTAIN_BONUS * amount; break;
-                    }
-                    player.transferValue += valueChange;
-                    if(player.transferValue < 0) player.transferValue = 0;
+        usernameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && usernameInput.value.length > 2) {
+                const name = usernameInput.value.trim();
+                if (!loadPlayerData(name)) {
+                    createNewPlayer(name);
                 }
-                savePlayers();
-                renderPlayers();
-            };
-
-            // --- UYGULAMA BAŞLANGICI ---
-            const initializeApp = () => {
-                addPlayerForm.addEventListener('submit', handleAddPlayer);
-                sortButtonsContainer.addEventListener('click', (e) => {
-                    const sortBtn = e.target.closest('.sort-btn');
-                    if (sortBtn && sortBtn.dataset.sort) {
-                        currentSort = sortBtn.dataset.sort;
-                        renderPlayers(); 
-                    }
-                });
-                loadPlayers();
-                renderPlayers();
-                updatePlayerLimitInfo();
-            };
-
-            initializeApp();
+                savePlayerData();
+                updateMainMenuUI();
+                showScreen('mainMenu');
+            }
         });
-    </script>
 
+        matchmakingBtn.addEventListener('click', startMatch);
+        shopBtn.addEventListener('click', () => {
+            updateShopUI();
+            showScreen('shop');
+        });
+        rankBtn.addEventListener('click', () => {
+            updateRankUI();
+            showScreen('rank');
+        });
+        
+        shopBackBtn.addEventListener('click', () => showScreen('mainMenu'));
+        rankBackBtn.addEventListener('click', () => showScreen('mainMenu'));
+
+
+        // --- Maç Mantığı ---
+        function startMatch() {
+            matchData = {
+                playerScore: 0,
+                opponentScore: 0,
+                opponentName: OPPONENT_NAMES[Math.floor(Math.random() * OPPONENT_NAMES.length)],
+                state: 'player_turn',
+            };
+            updateMatchUI();
+            showScreen('match');
+            showFeedback(`Rakip Bulundu: ${matchData.opponentName}`);
+        }
+
+        function updateMatchUI() {
+            playerNameMatch.textContent = player.name;
+            playerScoreMatch.textContent = matchData.playerScore;
+            opponentNameMatch.textContent = matchData.opponentName;
+            opponentScoreMatch.textContent = matchData.opponentScore;
+
+            if (matchData.state === 'player_turn') {
+                matchInfoText.textContent = "Seçimini Yap!";
+                choicesDisplay.classList.add('hidden');
+                matchButtonsContainer.classList.remove('hidden');
+            } else if (matchData.state === 'reveal') {
+                choicesDisplay.classList.remove('hidden');
+                matchButtonsContainer.classList.add('hidden');
+            } else if (matchData.state === 'end_match') {
+                matchButtonsContainer.classList.add('hidden');
+            }
+        }
+
+        matchButtonsContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('match-choice-btn')) {
+                playRound(e.target.dataset.choice);
+            }
+        });
+
+        function playRound(playerChoice) {
+            if (matchData.state !== 'player_turn') return;
+            
+            const choices = ['Taş', 'Kağıt', 'Makas'];
+            const opponentChoice = choices[Math.floor(Math.random() * choices.length)];
+            let resultText = "";
+
+            if (playerChoice === opponentChoice) {
+                resultText = "Berabere!";
+            } else if (
+                (playerChoice === 'Taş' && opponentChoice === 'Makas') ||
+                (playerChoice === 'Kağıt' && opponentChoice === 'Taş') ||
+                (playerChoice === 'Makas' && opponentChoice === 'Kağıt')
+            ) {
+                resultText = "Kazandın!";
+                matchData.playerScore++;
+            } else {
+                resultText = "Kaybettin!";
+                matchData.opponentScore++;
+            }
+
+            matchData.state = 'reveal';
+            matchInfoText.textContent = resultText;
+            playerChoiceText.textContent = `Sen: ${playerChoice}`;
+            opponentChoiceText.textContent = `Rakip: ${opponentChoice}`;
+            updateMatchUI();
+
+            setTimeout(() => {
+                checkMatchEnd();
+            }, 2000);
+        }
+
+        function checkMatchEnd() {
+            if (matchData.playerScore >= 3 || matchData.opponentScore >= 3) {
+                matchData.state = 'end_match';
+                let endMessage = "";
+                if (matchData.playerScore >= 3) {
+                    const trophyGain = 20 * (player.powerups['2x_trophy'] > 0 ? 2 : 1);
+                    player.trophies += trophyGain;
+                    player.money += 30;
+                    addXp(50);
+                    if (player.powerups['2x_trophy'] > 0) player.powerups['2x_trophy']--;
+                    endMessage = `MAÇI KAZANDIN! +${trophyGain} Kupa, +30 Para, +50 XP`;
+                } else {
+                    player.trophies = Math.max(0, player.trophies - 10);
+                    endMessage = "Maçı Kaybettin. -10 Kupa";
+                }
+                matchInfoText.textContent = endMessage;
+                updateMatchUI();
+                savePlayerData();
+                setTimeout(() => {
+                    updateMainMenuUI();
+                    showScreen('mainMenu');
+                    showFeedback(endMessage, 5000);
+                }, 3000);
+            } else {
+                matchData.state = 'player_turn';
+                updateMatchUI();
+            }
+        }
+        
+        // --- Dükkan & Rank Mantığı ---
+        const SHOP_ITEMS = {
+            frames: [
+                {id: 'bronz', name: 'Bronz Çerçeve', price: 150, color: '#a1887f'},
+                {id: 'gumus', name: 'Gümüş Çerçeve', price: 300, color: '#e0e0e0'},
+                {id: 'altin', name: 'Altın Çerçeve', price: 500, color: '#ffd700'},
+                {id: 'ates', name: 'Ateş Çerçeve', price: 800, color: '#ff4500'},
+                {id: 'buz', name: 'Buz Çerçeve', price: 800, color: '#00bfff'},
+                {id: 'zehir', name: 'Zehir Çerçeve', price: 1200, color: '#32cd32'},
+                {id: 'golge', name: 'Gölge Çerçeve', price: 2000, color: '#4b0082'},
+                {id: 'galaksi', name: 'Galaksi Çerçeve', price: 5000, color: '#8a2be2'},
+            ],
+            powerups: [
+                {id: '2x_trophy', name: '2x Kupa (1 Maç)', price: 250}
+            ]
+        };
+        
+        const RANKS = [
+            {name: "Bronz", trophies: 0, color: '#a1887f'},
+            {name: "Gümüş", trophies: 100, color: '#e0e0e0'},
+            {name: "Altın", trophies: 300, color: '#ffd700'},
+            {name: "Elmas", trophies: 600, color: '#b9f2ff'},
+            {name: "ELİTE", trophies: 1000, color: '#ff69b4'}
+        ];
+
+        function getPlayerRank() {
+            let currentRank = RANKS[0];
+            for(let i = RANKS.length - 1; i >= 0; i--) {
+                if (player.trophies >= RANKS[i].trophies) {
+                    currentRank = RANKS[i];
+                    break;
+                }
+            }
+            return currentRank;
+        }
+
+        function updateShopUI() {
+            shopItemsContainer.innerHTML = '';
+            shopMoneyText.textContent = `Paran: ${player.money}`;
+            
+            // Çerçeveler
+            let framesTitle = `<h2 class="text-2xl font-bold text-white mb-2">Çerçeveler</h2>`;
+            shopItemsContainer.insertAdjacentHTML('beforeend', framesTitle);
+            SHOP_ITEMS.frames.forEach(item => {
+                const isOwned = player.ownedFrames[item.id];
+                const canAfford = player.money >= item.price;
+                
+                let buttonHtml;
+                if (isOwned) {
+                    const isEquipped = player.equippedFrame === item.id;
+                    buttonHtml = `<button disabled class="w-32 px-4 py-2 rounded ${isEquipped ? 'bg-green-600' : 'bg-blue-600'}">${isEquipped ? 'Kuşanıldı' : 'Sahipsin'}</button>`;
+                } else {
+                    buttonHtml = `<button ${canAfford ? '' : 'disabled'} data-item-id="${item.id}" data-item-type="frame" class="buy-btn w-32 px-4 py-2 rounded ${canAfford ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-gray-600 cursor-not-allowed'}">Fiyat: ${item.price}</button>`;
+                }
+                
+                const itemHtml = `
+                    <div class="flex items-center justify-between bg-gray-800 p-3 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-md mr-4" style="background-color: ${item.color};"></div>
+                            <span class="font-semibold text-lg">${item.name}</span>
+                        </div>
+                        <div data-item-id="${item.id}" data-item-type="frame" class="equip-btn-container cursor-pointer">${buttonHtml}</div>
+                    </div>`;
+                shopItemsContainer.insertAdjacentHTML('beforeend', itemHtml);
+            });
+            
+            // Güçlendirmeler
+            let powerupsTitle = `<h2 class="text-2xl font-bold text-white mt-8 mb-2">Güçlendirmeler</h2>`;
+            shopItemsContainer.insertAdjacentHTML('beforeend', powerupsTitle);
+            SHOP_ITEMS.powerups.forEach(item => {
+                 const canAfford = player.money >= item.price;
+                 const itemHtml = `
+                    <div class="flex items-center justify-between bg-gray-800 p-3 rounded-lg">
+                        <div>
+                            <span class="font-semibold text-lg">${item.name}</span>
+                            <p class="text-sm text-gray-400">Sahip olunan: ${player.powerups[item.id] || 0}</p>
+                        </div>
+                        <button ${canAfford ? '' : 'disabled'} data-item-id="${item.id}" data-item-type="powerup" class="buy-btn w-32 px-4 py-2 rounded ${canAfford ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-gray-600 cursor-not-allowed'}">Fiyat: ${item.price}</button>
+                    </div>`;
+                 shopItemsContainer.insertAdjacentHTML('beforeend', itemHtml);
+            });
+        }
+
+        shopItemsContainer.addEventListener('click', e => {
+            const target = e.target.closest('.buy-btn, .equip-btn-container');
+            if (!target) return;
+
+            const id = target.dataset.itemId || target.parentElement.dataset.itemId;
+            const type = target.dataset.itemType || target.parentElement.dataset.itemType;
+            
+            if (type === 'frame') {
+                 if (player.ownedFrames[id]) { // Equip
+                    player.equippedFrame = id;
+                    showFeedback('Çerçeve kuşanıldı!');
+                } else { // Buy
+                    const item = SHOP_ITEMS.frames.find(f => f.id === id);
+                    if (player.money >= item.price) {
+                        player.money -= item.price;
+                        player.ownedFrames[item.id] = { name: item.name, color: item.color };
+                        player.equippedFrame = id;
+                        showFeedback(`${item.name} satın alındı ve kuşanıldı!`);
+                    }
+                }
+            } else if (type === 'powerup') { // Buy powerup
+                const item = SHOP_ITEMS.powerups.find(p => p.id === id);
+                if (player.money >= item.price) {
+                    player.money -= item.price;
+                    player.powerups[item.id] = (player.powerups[item.id] || 0) + 1;
+                    showFeedback(`${item.name} satın alındı!`);
+                }
+            }
+            
+            savePlayerData();
+            updateShopUI();
+            updateMainMenuUI();
+        });
+
+
+        function updateRankUI() {
+            rankListContainer.innerHTML = '';
+            const playerRank = getPlayerRank();
+
+            RANKS.forEach(rank => {
+                const isPlayerRank = rank.name === playerRank.name;
+                const rankHtml = `
+                    <div class="p-4 rounded-lg flex justify-between items-center ${isPlayerRank ? 'border-4' : 'bg-gray-800'}" style="border-color: ${isPlayerRank ? rank.color : 'transparent'};">
+                        <h3 class="text-2xl font-bold" style="color: ${rank.color};">${rank.name}</h3>
+                        <p class="text-lg text-gray-300">${rank.trophies}+ Kupa</p>
+                    </div>`;
+                rankListContainer.insertAdjacentHTML('beforeend', rankHtml);
+            });
+            
+            playerRankInfo.textContent = `Senin Rankın: ${playerRank.name} (${player.trophies} Kupa)`;
+            playerRankInfo.style.color = playerRank.color;
+        }
+
+    });
+    </script>
 </body>
 </html>
